@@ -1,0 +1,164 @@
+import javafx.application.Application;
+import javafx.concurrent.Task;
+import javafx.event.EventHandler;
+import javafx.scene.Group;
+import javafx.scene.Scene;
+import javafx.scene.canvas.Canvas;
+import javafx.scene.canvas.GraphicsContext;
+import javafx.scene.paint.Color;
+import javafx.stage.Stage;
+import javafx.scene.input.MouseEvent;
+
+public class ConvasL extends Application {
+    private static GraphicsContext context;
+    private static boolean[][] world;
+    private static int width;
+    private static int height;
+
+    public static void main(String[] args) {
+        launch(args);
+    }
+
+    @Override
+    public void start(Stage primaryStage) {
+        primaryStage.setTitle("Conway's Game of Life");
+        Group root = new Group();
+        Canvas canvas = new Canvas(772, 772);
+        context = canvas.getGraphicsContext2D();
+        root.getChildren().add(canvas);
+        primaryStage.setScene(new Scene(root));
+        primaryStage.show();
+
+        width = 35;
+        height = 35;
+        world = new boolean[width][height];
+
+        canvas.addEventHandler(MouseEvent.MOUSE_CLICKED,(new EventHandler<MouseEvent>() {
+            @Override
+            public void handle(MouseEvent event ) {
+                int Ox=(int)event.getSceneX();
+                int Oy=(int) event.getScreenY() -106;
+                System.out.println(Ox+" "+ Oy);
+                world[Oy/22][Ox/22] = true;
+
+                context.setFill(Color.rgb(255, 127, 80)); //цвет заливка
+                context.fillRoundRect((Ox/22)*22+1, (Oy/22)*22+1, 20, 20, 3, 3);
+              
+
+            }
+        }));
+
+
+        for (int i = 0; i < width; i++) {
+            for (int j = 0; j < height; j++) {
+               // if ((j + 1) % 3 != 0 && (i + 1) % 3 != 0)
+               //     world[i][j] = true;
+              //  else world[i][j] = false;
+               // world[width / 2+1 ][height / 2] = true;
+
+                if (Math.random() < 0.5) world[i][j] = true;
+               else
+                   world[i][j] = false;
+
+            }
+        }
+
+
+        Task<Void> task = new Task<Void>() {
+            @Override
+            protected Void call() throws Exception {
+                while(true) {
+                    updateWorld();
+                    drawWorld();
+
+                    try {
+                        Thread.sleep(100);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        };
+
+        new Thread(task).start();
+
+    }
+
+    public static void updateWorld() {
+        boolean[][] worldCopy = new boolean[width][height];
+        int environment=0;
+        for (int i = 0; i < width; i++)
+            for (int j = 0; j < height; j++)
+                worldCopy[i][j] = world[i][j];
+
+        for (int i = 0; i < width; i++) {
+            for (int j = 0; j < height; j++) {
+                if ((j - 1) >= 0 && (i - 1) >= 0)
+                    if (world[i - 1][j - 1])
+                        environment++;
+                if ((i - 1) >= 0)
+                    if (world[i - 1][j])
+                        environment++;
+                if ((j + 1) < height && (i - 1) >= 0)
+                    if (world[i - 1][j + 1])
+                        environment++;
+                if ((j - 1) >= 0)
+                    if (world[i][j - 1])
+                        environment++;
+                if ((j + 1) < height)
+                    if (world[i][j + 1])
+                        environment++;
+                if ((j - 1) >= 0 && (i + 1) <width)
+                    if (world[i + 1][j - 1])
+                        environment++;
+                if ((i + 1) < width)
+                    if (world[i + 1][j])
+                        environment++;
+                if ((j + 1) < height && (i + 1) < width)
+                    if (world[i + 1][j + 1])
+                        environment++;
+
+                if (environment < 2 || environment > 3)
+                    worldCopy[i][j] = false;
+                else if (environment == 3)
+                    worldCopy[i][j] = true;
+                else if (worldCopy[i][j] && environment == 2)
+                    worldCopy[i][j] = true;
+                else worldCopy[i][j] = false;
+
+
+                environment = 0;
+            }
+        }
+        for (int i = 0; i < width; i++) {
+            for (int j = 0; j < height; j++) {
+                world[i][j] = worldCopy[i][j];
+            }
+        }
+    }
+
+    private void drawWorld() {
+
+        for (int i = 0; i < width; i++) {
+            for (int j = 0; j < height; j++) {
+                if (world[i][j]) {
+                    context.setFill(Color.rgb(255, 127, 80));
+                    context.fillRoundRect(j * 22 + 1, i * 22 + 1, 20, 20, 3, 3);
+
+                } else {
+                    context.setFill(Color.rgb(127, 255, 212));
+                    context.fillRoundRect(j * 22 + 1, i * 22 + 1, 20, 20, 3, 3);
+                }
+            }
+        }
+        context.setStroke(Color.rgb(167, 235, 200));
+        context.setLineWidth(3);
+        int xo = 0;
+        for (int i = 0; i < 36; i++) {
+            context.strokeLine(xo, 0, xo, 770);
+            context.strokeLine(0, xo, 770, xo);
+            xo += 22;
+        }
+    }
+
+}
